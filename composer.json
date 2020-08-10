@@ -1,0 +1,23 @@
+{
+    "name": "sahartak/mvc",
+    "description": "mvc mini project",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Artak Sahakyan",
+            "email": "sahartak777@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4.0",
+        "opis/database": "^4.2",
+        "twig/twig": "^3.0",
+        "jasongrimes/paginator": "~1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "app\\": ""
+        }
+    }
+
+}
