@@ -96,6 +96,9 @@ class Route implements Configurable
         if (!$this->routeName) {
             $this->routeName = '/';
         }
+        if (strpos($this->routeName, '/') !== 0) {
+            $this->routeName = '/'.$this->routeName;
+        }
         return $this->routeName;
     }
     
