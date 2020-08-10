@@ -13,6 +13,7 @@ use app\framework\classes\Model;
  * @property string $email
  * @property string $text
  * @property int $status
+ * @property int $is_edited
  */
 class Task extends Model
 {
@@ -34,7 +35,7 @@ class Task extends Model
     public function attributes(): array
     {
         return [
-            'id', 'name', 'email', 'text', 'status'
+            'id', 'name', 'email', 'text', 'status', 'is_edited'
         ];
     }
     
@@ -55,7 +56,6 @@ class Task extends Model
     {
         $this->name = strip_tags(trim($this->name));
         $this->validateRequired('name') && $this->validateMaxLength('name', static::MAX_STRING_SIZE);
-        
         $this->email = trim($this->email);
         $this->validateRequired('email') && $this->validateEmail('email');
         $this->text = trim($this->text);

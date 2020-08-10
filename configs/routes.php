@@ -5,5 +5,6 @@ return [
         '/' => 'Home',
         'login' => 'Admin@login',
         'logout' => 'Admin@logout',
+        'edit' => 'Admin@edit'
     ]
 ];

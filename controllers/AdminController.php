@@ -10,15 +10,9 @@ use app\framework\classes\Route;
 
 class AdminController extends Controller
 {
-
-    protected function checkAdmin()
-    {
-        $session = Session::getInstance();
-        if (!$session->get('isAdmin')) {
-            $this->redirect('/login');
-        }
-    }
-
+    
+    const ADMIN_LOGIN = 'admin';
+    const ADMIN_PASSWORD = '123';
     /**
      * @return string
      * @throws \Twig\Error\LoaderError
@@ -32,7 +26,7 @@ class AdminController extends Controller
         if ($session->get('isAdmin')) {
             return $this->redirect(Route::getAppUrl());
         }
-
+        
         if ($_POST) {
             $username = $_POST['username'] ?? '';
             $password = $_POST['password'] ?? '';
@@ -43,7 +37,7 @@ class AdminController extends Controller
                 $data['errors']['password'] = 'password is required';
             }
             if (!$data['errors']) {
-                if ($username == 'admin' && $password == '123') {
+                if ($username == static::ADMIN_LOGIN && $password == self::ADMIN_PASSWORD) {
                     $session->set('isAdmin', true);
                     return $this->redirect(Route::getAppUrl());
                 } else {
@@ -51,19 +45,57 @@ class AdminController extends Controller
                 }
             }
         }
-
+        
         return $this->render('login', $data);
-
-     }
-
+    }
+    
+    
+    public function edit()
+    {
+        $this->checkAdmin();
+        $id = intval($_GET['id'] ?? null);
+        if (!$id) {
+            return null;
+        }
+        $task = Task::findById($id);
+        if (!$task) {
+            return null;
+        }
+        $session = Session::getInstance();
+        $attributes = array_merge($task->safeAttributes(), ['status']);
+        $oldText = $task->text;
+        if ($task->load($_POST, $attributes)) {
+            if ($task->text !== $oldText) {
+                $task->is_edited = 1;
+            }
+            if ($task->save()) {
+                $session->set('success', 'Task successfully saved!');
+                return $this->redirect(Route::getAppUrl());
+            }
+        }
+        $errors = $task->getValidationErrors();
+        return $this->render('edit', compact('task', 'errors'));
+    }
     /**
      * logout user
      */
     public function logout()
     {
+        $this->checkAdmin();
         $session = Session::getInstance();
         $session->remove('isAdmin');
         return $this->redirect(Route::getAppUrl());
     }
-
+    
+    /**
+     * check if admin logged in
+     */
+    protected function checkAdmin()
+    {
+        $session = Session::getInstance();
+        if (!$session->get('isAdmin')) {
+            $this->redirect(Route::getAppUrl().'/login');
+        }
+    }
+    
 }

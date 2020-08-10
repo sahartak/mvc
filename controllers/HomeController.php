@@ -20,8 +20,10 @@ class HomeController extends Controller
      */
     public function index()
     {
-        $task = new Task();
-        $task->status = 0;
+        $task = new Task([
+            'status' => 0,
+            'is_edited' => 0
+        ]);
         $session = Session::getInstance();
         if ($task->load($_POST) && $task->save()) {
             $session->set('success', 'Task successfully created!');

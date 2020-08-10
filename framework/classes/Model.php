@@ -114,6 +114,20 @@ abstract class Model
     }
     
     /**
+     * Returns object instance found by id
+     * @param int $id
+     * @return static|null
+     */
+    public static function findById(int $id): ?self
+    {
+        $data = static::find()->where('id')->eq($id)->select()->first();
+        if (!$data) {
+            return null;
+        }
+        return new static(get_object_vars($data));
+    }
+    
+    /**
      * @return \Opis\Database\Database
      */
     public static function getDb()
@@ -138,11 +152,12 @@ abstract class Model
     
     /**
      * @param array $attributes
+     * @param array|null $attributeNames
      * @return bool
      */
-    public function load(array $attributes): bool
+    public function load(array $attributes, ?array $attributeNames = null): bool
     {
-        $attributeNames = $this->safeAttributes();
+        $attributeNames = $attributeNames ?? $this->safeAttributes();
         return $this->setAttributes($attributes, $attributeNames);
     }
     
@@ -217,10 +232,11 @@ abstract class Model
         $db = static::getDb();
         if ($this->{$primaryKey}) {
             unset($attributes[$this->primaryKey]);
-            return $db->update(static::getTableName())
+            $db->update(static::getTableName())
                 ->where($this->primaryKey)
                 ->is($this->{$primaryKey})
                 ->set($attributes);
+            return true;
         }
         $result = $db->insert($attributes)->into(static::getTableName());
         if ($result) {
