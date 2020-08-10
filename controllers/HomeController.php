@@ -6,7 +6,6 @@ namespace app\controllers;
 use app\framework\classes\Controller;
 use app\framework\classes\Route;
 use app\models\Task;
-use JasonGrimes\Paginator;
 
 class HomeController extends Controller
 {
@@ -21,8 +20,9 @@ class HomeController extends Controller
     public function index()
     {
         $task = new Task();
-        if ($task->load($_POST) && $task->validate()) {
-        
+        $task->status = 0;
+        if ($task->load($_POST) && $task->save()) {
+            return $this->redirect(Route::getAppUrl());
         }
         $data = Task::getPaginatedResults(
             $task,
@@ -30,6 +30,8 @@ class HomeController extends Controller
             $_GET['sort'] ?? null,
             $_GET['sortType'] ?? null
         );
+        $data['task'] = $task;
+        $data['errors'] = $task->getValidationErrors();
         return $this->render('index', $data);
     }
 }

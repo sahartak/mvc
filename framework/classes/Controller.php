@@ -23,4 +23,15 @@ abstract class Controller
         $twig = new \Twig\Environment($loader);
         return $twig->render('@views/'.$view.'.html', $params);
     }
+    
+    /**
+     * Redirect page to given url
+     * @param string $url
+     * @return bool
+     */
+    public function redirect(string $url)
+    {
+        header("Location: $url");
+        return true;
+    }
 }

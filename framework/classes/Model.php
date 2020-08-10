@@ -24,23 +24,10 @@ abstract class Model
     }
     
     /**
-     * Adding validation error to attribute
-     * @param string $attribute
-     * @param string $message
-     */
-    public function addValidationError(string $attribute, string $message)
-    {
-        $this->validationErrors[$attribute] = $message;
-    }
-    
-    /**
-     * Return array with validation errors
+     * Return array of attributes names in database columns
      * @return array
      */
-    public function getValidationErrors(): array
-    {
-        return $this->validationErrors;
-    }
+    abstract public function attributes(): array;
     
     /**
      * Setting attributes values to model
@@ -59,32 +46,58 @@ abstract class Model
     }
     
     /**
-     * @param array $attributes
-     * @return bool
+     * Return array of results with keys items, pagination, fieldsSortUrls
+     * @param Model $model
+     * @param int $currentPage
+     * @param string|null $sort
+     * @param string|null $sortType
+     * @return array
      */
-    public function load(array $attributes): bool
+    public static function getPaginatedResults(self $model, int $currentPage, ?string $sort, ?string $sortType): array
     {
-        $attributeNames = $this->safeAttributes();
-        return $this->setAttributes($attributes, $attributeNames);
+        $totalItems = static::find()->count();
+        $itemsPerPage = static::ITEMS_PER_PAGE;
+        $currentPage = intval($_GET['page'] ?? 1);
+        $offset = ($currentPage - 1) * $itemsPerPage;
+        
+        $query = static::find();
+        
+        $sort = $_GET['sort'] ?? null;
+        $sortType = $_GET['sortType'] ?? null;
+        $attributes = $model->attributes();
+        $params = [];
+        if ($sort && in_array($sort, $attributes)) {
+            $params['sort'] = $sort;
+            $query->orderBy($sort, $sortType == 'desc' ? 'DESC' : 'ASC');
+        }
+        
+        $appUrl = Route::getAppUrl();
+        $fieldsSortUrls = [];
+        foreach ($attributes as $attribute) {
+            $fieldsSortUrls[$attribute] = $appUrl . '?sort=' . $attribute;
+            if ($sort == $attribute && ($sortType == 'asc' || !$sortType)) {
+                $fieldsSortUrls[$attribute] .= '&sortType=desc';
+            }
+        }
+        
+        if ($sortType && in_array($sortType, ['asc', 'desc'])) {
+            $params['sortType'] = $sortType;
+        }
+        
+        $params['page'] = '';
+        
+        $url = $appUrl . '?' . http_build_query($params) . '(:num)';
+        $pagination = new Paginator($totalItems, $itemsPerPage, $currentPage, $url);
+        
+        
+        $items = $query
+            ->offset($offset)
+            ->limit($itemsPerPage)
+            ->select()
+            ->all();
+        
+        return compact('items', 'pagination', 'fieldsSortUrls');
     }
-    
-    /**
-     * Return name of table in database
-     * @return string
-     */
-    abstract public static function getTableName(): string;
-    
-    /**
-     * Return array of attributes names in database columns
-     * @return array
-     */
-    abstract public function attributes(): array;
-    
-    /**
-     * Return array of attributes names in database columns which should be loaded from request
-     * @return array
-     */
-    abstract public function safeAttributes(): array;
     
     /**
      * Returns query object
@@ -103,66 +116,36 @@ abstract class Model
         return Database::getInstance()->getDb();
     }
     
+    /**
+     * Return name of table in database
+     * @return string
+     */
+    abstract public static function getTableName(): string;
     
     /**
-     * Return array of results with keys items, pagination, fieldsSortUrls
-     * @param Model $model
-     * @param int $currentPage
-     * @param string|null $sort
-     * @param string|null $sortType
+     * Return array with validation errors
      * @return array
      */
-    public static function getPaginatedResults(self $model, int $currentPage, ?string $sort, ?string $sortType): array
+    public function getValidationErrors(): array
     {
-        $totalItems = static::find()->count();
-        $itemsPerPage = static::ITEMS_PER_PAGE;
-        $currentPage = intval($_GET['page'] ?? 1);
-        $offset = ($currentPage - 1) * $itemsPerPage;
-        
-        $query =  static::find();
-        
-        $sort = $_GET['sort'] ?? null;
-        $sortType = $_GET['sortType'] ?? null;
-        $attributes = $model->attributes();
-        $params = [];
-        if ($sort && in_array($sort, $attributes)) {
-            $params['sort'] = $sort;
-            $query->orderBy($sort, $sortType == 'desc' ? 'DESC' : 'ASC');
-        }
-        
-        $appUrl = Route::getAppUrl();
-        $fieldsSortUrls = [];
-        foreach ($attributes as $attribute) {
-            $fieldsSortUrls[$attribute] = $appUrl.'?sort='.$attribute;
-            if ($sort == $attribute && ($sortType == 'asc' || !$sortType)) {
-                $fieldsSortUrls[$attribute].= '&sortType=desc';
-            }
-        }
-        
-        if ($sortType && in_array($sortType, ['asc', 'desc'])) {
-            $params['sortType'] = $sortType;
-        }
-        
-        $params['page'] = '';
-        
-        $url = $appUrl.'?'.http_build_query($params).'(:num)';
-        $pagination = new Paginator($totalItems, $itemsPerPage, $currentPage, $url);
-        
-        
-        $items = $query
-            ->offset($offset)
-            ->limit($itemsPerPage)
-            ->select()
-            ->all();
-        
-        return compact('items', 'pagination', 'fieldsSortUrls');
+        return $this->validationErrors;
     }
     
     /**
-     * Check if model attributes have valid values
+     * @param array $attributes
      * @return bool
      */
-    public abstract function validate(): bool;
+    public function load(array $attributes): bool
+    {
+        $attributeNames = $this->safeAttributes();
+        return $this->setAttributes($attributes, $attributeNames);
+    }
+    
+    /**
+     * Return array of attributes names in database columns which should be loaded from request
+     * @return array
+     */
+    abstract public function safeAttributes(): array;
     
     /**
      * @param $attribute
@@ -171,10 +154,20 @@ abstract class Model
     public function validateRequired($attribute): bool
     {
         if (empty($this->$attribute)) {
-            $this->addValidationError($attribute, $attribute.' is required');
+            $this->addValidationError($attribute, $attribute . ' is required');
             return false;
         }
         return true;
+    }
+    
+    /**
+     * Adding validation error to attribute
+     * @param string $attribute
+     * @param string $message
+     */
+    public function addValidationError(string $attribute, string $message)
+    {
+        $this->validationErrors[$attribute] = $message;
     }
     
     /**
@@ -185,19 +178,82 @@ abstract class Model
     public function validateMaxLength(string $attribute, int $length): bool
     {
         if (mb_strlen($this->$attribute) > $length) {
-            $this->addValidationError($attribute, 'Max length for '.$attribute.' is '.$length.' characters');
+            $this->addValidationError($attribute, 'Max length for ' . $attribute . ' is ' . $length . ' characters');
             return false;
         }
         return true;
     }
     
-    
     /**
+     * Validate email address
      * @param string $attribute
      * @return bool
      */
     public function validateEmail(string $attribute): bool
     {
-        return filter_var($this->$attribute, FILTER_VALIDATE_EMAIL);
+        if(!filter_var($this->$attribute, FILTER_VALIDATE_EMAIL)) {
+            $this->addValidationError($attribute, $this->$attribute.' is not valid email address');
+            return false;
+        }
+        return true;
+    }
+    
+    /**
+     * Save model to database if model is valid
+     * @return bool
+     */
+    public function save(): bool
+    {
+        if (!$this->validate()) {
+            return false;
+        }
+        $attributes = $this->getAttributes();
+        $primaryKey = $this->primaryKey;
+        $db = static::getDb();
+        if ($this->{$primaryKey}) {
+            unset($attributes[$this->primaryKey]);
+            return $db->update(static::getTableName())
+                ->where($this->primaryKey)
+                ->is($this->{$primaryKey})
+                ->set($attributes);
+        }
+        $result = $db->insert($attributes)->into(static::getTableName());
+        if ($result) {
+            $this->$primaryKey = Database::getInstance()->getLastInsertId();
+            return true;
+        }
+        
+        return false;
+        
+    }
+    
+    /**
+     * Check if model attributes have valid values
+     * @return bool
+     */
+    public abstract function validate(): bool;
+    
+    /**
+     * Returns array of model attributes
+     * @return array
+     */
+    public function getAttributes(): array
+    {
+        $attributeNames = $this->attributes();
+        $attributes = [];
+        foreach ($attributeNames as $attributeName) {
+            $attributes[$attributeName] = $this->$attributeName ?? null;
+        }
+        return $attributes;
+    }
+    
+    /**
+     * Returns validation error if exists for given attribute
+     * @param string $attribute
+     * @return string|null
+     */
+    public function getError(string $attribute): ?string
+    {
+        return $this->validationErrors[$attribute] ?? null;
     }
 }

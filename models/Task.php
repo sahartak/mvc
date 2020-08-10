@@ -60,6 +60,7 @@ class Task extends Model
         $this->validateRequired('email') && $this->validateEmail('email');
         $this->text = htmlentities(trim($this->text));
         $this->validateRequired('text') && $this->validateMaxLength('text', 2000);
+        return $this->getValidationErrors() ? false : true;
     }
     
     

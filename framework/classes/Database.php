@@ -51,6 +51,15 @@ class Database implements DatabaseInterface, Configurable
         return $this->db;
     }
     
+    /**
+     * Returns last inserted id from database
+     * @return int
+     */
+    public function getLastInsertId(): int
+    {
+        return $this->getDb()->getConnection()->getPDO()->lastInsertId();
+    }
+    
     
     /**
      * @param string $host
