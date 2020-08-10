@@ -38,9 +38,11 @@ abstract class Model
     public function setAttributes(array $attributes, array $attributeNames): bool
     {
         $loaded = false;
-        foreach ($attributeNames as $attributeName) {
-            $loaded = true;
-            $this->$attributeName = $attributes[$attributeName] ?? null;
+        if ($attributes) {
+            foreach ($attributeNames as $attributeName) {
+                $loaded = true;
+                $this->$attributeName = $attributes[$attributeName] ?? null;
+            }
         }
         return $loaded;
     }
@@ -69,6 +71,8 @@ abstract class Model
         if ($sort && in_array($sort, $attributes)) {
             $params['sort'] = $sort;
             $query->orderBy($sort, $sortType == 'desc' ? 'DESC' : 'ASC');
+        } else {
+            $query->orderBy('id', 'DESC');
         }
         
         $appUrl = Route::getAppUrl();
@@ -98,7 +102,8 @@ abstract class Model
         
         return compact('items', 'pagination', 'fieldsSortUrls');
     }
-    
+
+
     /**
      * Returns query object
      * @return \Opis\Database\SQL\Query

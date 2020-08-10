@@ -2,6 +2,8 @@
 return [
     'appUrl' => 'http://localhost/mvc',
     'rules' => [
-        '/' => 'Home'
+        '/' => 'Home',
+        'login' => 'Admin@login',
+        'logout' => 'Admin@logout',
     ]
 ];

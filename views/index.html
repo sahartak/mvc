@@ -12,6 +12,18 @@
 
   <div class="row">
     <div class="col-md-12">
+      {% if success|default(null) %}
+      <div class="alert alert-success" role="alert">
+        {{ success }}
+      </div>
+      {% endif %}
+      <p class="pull-right">
+        {% if isAdmin %}
+        <a class="btn btn-default" href="{{ appUrl }}/logout">Logout</a>
+        {% else %}
+        <a class="btn btn-default" href="{{ appUrl }}/login">Login</a>
+        {% endif %}
+      </p>
       <h1>Tasks</h1>
       <table class="table">
         <thead>
@@ -20,6 +32,9 @@
           <th><a href="{{ fieldsSortUrls.email }}">Email</a></th>
           <th>Text</th>
           <th><a href="{{ fieldsSortUrls.status }}">Status</a></th>
+          {% if isAdmin %}
+            <th></th>
+          {% endif %}
         </tr>
         </thead>
         <tbody>
@@ -35,6 +50,9 @@
             Pending
             {% endif %}
           </td>
+          {% if isAdmin %}
+          <td><a href="{{ appUrl }}/edit/{{task.id}}">Edit</a></td>
+          {% endif %}
         </tr>
         {% endfor %}
         </tbody>
@@ -50,15 +68,23 @@
         <div class="form-group">
           <label for="email">Email:</label>
           <input type="text" class="form-control" id="email" placeholder="Enter email" name="email" value="{{ task.email }}">
-
+          {% if errors.email is defined %}
+            <span class="text-danger">{{ errors.email }}</span>
+          {% endif %}
         </div>
         <div class="form-group">
           <label for="name">Name:</label>
           <input type="name" class="form-control" id="name" placeholder="Enter your name" name="name" value="{{ task.name }}">
+          {% if errors.name is defined %}
+            <span class="text-danger">{{ errors.name }}</span>
+          {% endif %}
         </div>
         <div class="form-group">
           <label for="text">Text:</label>
           <textarea class="form-control" name="text" id="text">{{ task.text }}</textarea>
+          {% if errors.text is defined %}
+            <span class="text-danger">{{ errors.text }}</span>
+          {% endif %}
         </div>
         <button type="submit" class="btn btn-primary">Submit</button>
       </form>
